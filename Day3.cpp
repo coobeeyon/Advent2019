@@ -51,18 +51,27 @@ std::ostream& operator<<(std::ostream& stream, const Point& p)
 	stream << "(" << p.x << "," << p.y << ")";
 	return stream;
 }
+int
+distance(const Point& a, const Point& b)
+{
+	return abs(a.x - b.x) + abs(a.y - b.y);
+}
 
 struct Edge
 {
 	Point start{};
 	Point end{};
+	int length()
+	{
+		return distance(start,end);
+	}
 };
+
 std::ostream& operator<<(std::ostream& stream, const Edge& e)
 {
 	stream << "(" << e.start << "=>" << e.end << ")";
 	return stream;
 }
-
 
 using Edges = std::vector<Edge>;
 
@@ -94,10 +103,6 @@ parsePath(const TokenVec& tokens)
 			assert("Unknown direction");
 		}
 		newEdge.end = curPoint;
-		if (( newEdge.start.x > newEdge.end.x ) || ( newEdge.start.y > newEdge.end.y ))
-		{
-			std::swap(newEdge.start, newEdge.end);
-		}
 		edges.push_back(newEdge);
 	}
 	return edges;
@@ -116,6 +121,14 @@ bool isVertical(const Edge& edge)
 std::vector<Point>
 intersectEdges(Edge edge0, Edge edge1)
 {
+	if (( edge0.start.x > edge0.end.x ) || ( edge0.start.y > edge0.end.y ))
+	{
+		std::swap(edge0.start, edge0.end);
+	}
+	if (( edge1.start.x > edge1.end.x ) || ( edge1.start.y > edge1.end.y ))
+	{
+		std::swap(edge1.start, edge1.end);
+	}
 	std::vector<Point> intersections;
 	if ( isHorizontal(edge0) && isHorizontal(edge1) && ( edge0.start.y == edge1.start.y ) )
 	{
@@ -173,41 +186,26 @@ main()
 	std::vector<TokenVec> tokens = streamTokens(dataStream);
 	Edges path1 = parsePath(tokens[0]);
 	Edges path2 = parsePath(tokens[1]);
-#if 0
-	std::cout << "Path1:\n";
-	for (auto& edge : path1)
-	{
-		std::cout << edge << std::endl;
-	}
-	std::cout << "Path2:\n";
-	for (auto& edge : path2)
-	{
-		std::cout << edge << std::endl;
-	}
-#endif
-	std::vector<Point> intersections;
+	int closestDistance{std::numeric_limits<int>::max()};
+	int path1Length{};
 	for (auto& edge0 : path1)
 	{
+		int path2Length{};
 		for ( auto& edge1 : path2 )
 		{
+			//std::cout << "path2Length= " << path2Length << std::endl;
 			auto edgeIntersections = intersectEdges(edge0, edge1);
-			std::move(edgeIntersections.begin(), edgeIntersections.end(),
-					  std::back_inserter(intersections));
+			for (auto& point : edgeIntersections)
+			{
+				int distanceToPoint = path1Length + distance(edge0.start, point) + path2Length + distance(edge1.start, point);
+				if ( distanceToPoint != 0 )
+				{
+					closestDistance = std::min( closestDistance, distanceToPoint );
+				}
+			}
+			path2Length += edge1.length();
 		}
+		path1Length += edge0.length();
 	}
-	std::cout << "Intersections:\n";
-	intersections.erase(std::remove(intersections.begin(), intersections.end(), Point{}), intersections.end());
-	for (auto& point : intersections)
-	{
-		std::cout << point << std::endl;
-	}
-	std::cout << "Furthest:\n";
-	Point furthest = *std::max_element(intersections.begin(), intersections.end(),
-									   [](const Point& p0, const Point& p1)
-									   {
-										   int d0 = abs(p0.x) + abs(p0.y);
-										   int d1 = abs(p1.x) + abs(p1.y);
-										   return d0 > d1;
-									   });
-	std::cout << furthest << ": " << abs(furthest.x) + abs(furthest.y);
+	std::cout << closestDistance << std::endl;
 }
