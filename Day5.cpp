@@ -18,6 +18,10 @@ enum class OpCode : uint8_t
 	Mult   = 2,
 	Input  = 3,
 	Output = 4,
+	JumpTrue = 5,
+	JumpFalse = 6,
+	LessThan = 7,
+	Equals = 8,
 	Halt   = 99
 };
 
@@ -38,6 +42,18 @@ operator<<(std::ostream& ostream, const OpCode& opCode)
 	case OpCode::Output:
 		ostream << "Output";
 		break;
+	case OpCode::JumpTrue:
+		ostream << "JumpTrue";
+		break;
+	case OpCode::JumpFalse:
+		ostream << "JumpFalse";
+		break;
+	case OpCode::LessThan:
+		ostream << "LessThan";
+		break;
+	case OpCode::Equals:
+		ostream << "Equals";
+		break;
 	case OpCode::Halt:
 		ostream << "Halt";
 		break;
@@ -56,6 +72,12 @@ numParams( OpCode opCode )
 	case OpCode::Input:
 	case OpCode::Output:
 		return 1;
+	case OpCode::JumpTrue:
+	case OpCode::JumpFalse:
+		return 2;
+	case OpCode::LessThan:
+	case OpCode::Equals:
+		return 3;
 	case OpCode::Halt:
 		return 0;
 	}
@@ -167,21 +189,42 @@ Runtime::nextInstruction()
 void
 Runtime::executeInstruction(const Instruction& instruction)
 {
+	auto& params = instruction.m_parameters;
 	switch ( instruction.m_opCode )
 	{
 	case OpCode::Add:
-		m_program[ instruction.m_parameters[2].m_value ] =
-			getParameter(instruction.m_parameters[0]) + getParameter(instruction.m_parameters[1]);
+		m_program[ params[2].m_value ] =
+			getParameter(params[0]) + getParameter(params[1]);
 		break;
 	case OpCode::Mult:
-		m_program[ instruction.m_parameters[2].m_value ] =
-			getParameter(instruction.m_parameters[0]) * getParameter(instruction.m_parameters[1]);
+		m_program[ params[2].m_value ] =
+			getParameter(params[0]) * getParameter(params[1]);
 		break;
 	case OpCode::Input:
-		std::cin >> m_program[ instruction.m_parameters[0].m_value ];
+		std::cin >> m_program[ params[0].m_value ];
 		break;
 	case OpCode::Output:
-		std::cout << getParameter(instruction.m_parameters[0]) << std::endl;
+		std::cout << getParameter(params[0]) << std::endl;
+		break;
+	case OpCode::JumpTrue:
+		if ( getParameter(params[0]) != 0 )
+		{
+			m_instructionPointer = m_program.begin() + getParameter(params[1]);
+		}
+		break;
+	case OpCode::JumpFalse:
+		if ( getParameter(params[0]) == 0 )
+		{
+			m_instructionPointer = m_program.begin() + getParameter(params[1]);
+		}
+		break;
+	case OpCode::LessThan:
+		m_program[params[2].m_value] =
+			( getParameter(params[0]) < getParameter(params[1]) ) ? 1 : 0;
+		break;
+	case OpCode::Equals:
+		m_program[params[2].m_value] =
+			( getParameter(params[0]) == getParameter(params[1]) ) ? 1 : 0;
 		break;
 	case OpCode::Halt:
 		m_isRunning = false;
