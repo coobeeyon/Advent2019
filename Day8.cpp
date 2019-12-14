@@ -4,6 +4,7 @@
 #include <fstream>
 #include <algorithm>
 #include <numeric>
+#include <array>
 
 int
 main()
@@ -20,19 +21,24 @@ main()
 	constexpr int layerHeight = 6;
 	constexpr int layerPixels = layerWidth * layerHeight;
 
-	auto minIter = pixels.begin();
-	auto currentIter = pixels.begin();
-	int minZeros = layerPixels + 1;
-	while (currentIter != pixels.end())
+	const int numLayers = pixels.size() / layerPixels;
+	std::array<int, layerPixels> image;
+	image.fill(2);
+	for (int layerPixel = 0; layerPixel < layerPixels ; layerPixel++)
 	{
-		int numZeros = std::count(currentIter, currentIter + layerPixels, 0);
-		if (numZeros <= minZeros)
+		int layerNum = 0;
+		while ( (image[layerPixel] == 2) && ( layerNum < numLayers ))
 		{
-			minZeros = numZeros;
-			minIter = currentIter;
+			image[layerPixel] = pixels[layerNum * layerPixels + layerPixel];
+			layerNum++;
 		}
-		currentIter += layerPixels;
 	}
-	std::cout << std::count(minIter, minIter + layerPixels, 1) *
-		std::count(minIter, minIter + layerPixels, 2) << std::endl;
+	for (int row = 0; row < layerHeight ; ++row)
+	{
+		for ( int col = 0 ; col < layerWidth ; ++col )
+		{
+			std::cout << ((image[row * layerWidth + col] == 0) ? ' ' : '*');
+		}
+		std::cout << std::endl;
+	}
 }
