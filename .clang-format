@@ -1,0 +1,22 @@
+﻿---
+Language:                                       Cpp
+BasedOnStyle:                                   LLVM
+IndentWidth:                                    4
+TabWidth:                                       4
+UseTab:                                         ForIndentation
+Standard:                                       Cpp11
+AccessModifierOffset:                           -4
+AlignAfterOpenBracket:                          true
+AlignConsecutiveDeclarations:                   true
+AlignConsecutiveAssignments:                    true
+AlignEscapedNewlines:                           Right
+AlignTrailingComments:                          true
+AllowShortCaseLabelsOnASingleLine:              true
+AllowShortFunctionsOnASingleLine:               InlineOnly
+AlwaysBreakAfterDefinitionReturnType:           true
+BreakBeforeBraces:                              Allman
+BreakConstructorInitializersBeforeComma:        true
+ColumnLimit:                                    0
+PointerAlignment:                               Left
+SpacesInAngles:                                 false
+...
