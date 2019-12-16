@@ -16,7 +16,7 @@ AllowShortFunctionsOnASingleLine:               InlineOnly
 AlwaysBreakAfterDefinitionReturnType:           true
 BreakBeforeBraces:                              Allman
 BreakConstructorInitializersBeforeComma:        true
-ColumnLimit:                                    0
+ColumnLimit:                                    80
 PointerAlignment:                               Left
 SpacesInAngles:                                 false
 ...
