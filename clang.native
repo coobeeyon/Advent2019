@@ -1,4 +1,0 @@
-[binaries]
-c = '/c/Program Files/LLVM/bin/clang'
-cpp = 'c:/Program Files/LLVM/bin/clang++'
-ld = '/c/Program Files/LLVM/bin/ld.lld'

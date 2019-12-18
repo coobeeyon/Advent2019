@@ -1,0 +1,12 @@
+cmake_minimum_required(VERSION 3.1...3.16)
+project(Advent2019 VERSION 1.0 LANGUAGES CXX)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+add_executable(Day9 Day9.cpp)
+target_compile_features(Day9 PUBLIC cxx_std_17)
+set_target_properties(Day9 PROPERTIES CXX_EXTENSIONS OFF)
+
+add_executable(Day10 Day10.cpp)
+target_compile_features(Day10 PUBLIC cxx_std_17)
+set_target_properties(Day10 PROPERTIES CXX_EXTENSIONS OFF)
