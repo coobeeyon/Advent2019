@@ -1,7 +1,9 @@
 #include <algorithm>
 #include <iostream>
+#include <iterator>
 #include <numeric>
 #include <string>
+#include <tuple>
 #include <vector>
 
 namespace
@@ -106,58 +108,90 @@ gcd(unsigned int u, unsigned int v)
 }
 
 int
-calcScore(const StarMap& m, int sx, int sy)
+countAsteroids(const StarMap& m)
+{
+	int numAsteroids =
+	    std::accumulate(m.begin(), m.end(), 0, [&](auto sum, auto& v) {
+		    return sum + std::count(v.begin(), v.end(), '#');
+	    });
+	return numAsteroids;
+}
+
+auto
+enumerateAsteroids(const StarMap& m)
+{
+	std::vector<std::pair<int, int>> asteroids;
+	int                              y = 0;
+	for (const auto& row : m)
+	{
+		int x = 0;
+		for (const auto& loc : row)
+		{
+			if (loc == '#')
+				asteroids.emplace_back(x, y);
+			++x;
+		}
+		++y;
+	}
+	return asteroids;
+}
+
+StarMap
+findZapped(const StarMap& m, int sx, int sy)
 {
 	StarMap   sm = m;
 	const int mw = sm.front().size();
 	const int mh = sm.size();
 	sm[sy][sx]   = '.';
-	for (int ay = 0; ay < mh; ++ay)
+	for (auto [ax, ay] : enumerateAsteroids(sm))
 	{
-		for (int ax = 0; ax < mw; ++ax)
+		int          dx = ax - sx;
+		int          dy = ay - sy;
+		unsigned int g  = gcd(abs(dx), abs(dy));
+		dy /= (int)g;
+		dx /= (int)g;
+		for (int y = ay + dy, x = ax + dx;
+		     (y >= 0) && (y < mh) && (x >= 0) && (x < mw); y += dy, x += dx)
 		{
-			if (sm[ay][ax] == '#')
-			{
-				int          dx = ax - sx;
-				int          dy = ay - sy;
-				unsigned int g  = gcd(abs(dx), abs(dy));
-				dy /= (int)g;
-				dx /= (int)g;
-				for (int y = ay + dy, x = ax + dx;
-				     (y >= 0) && (y < mh) && (x >= 0) && (x < mw);
-				     y += dy, x += dx)
-				{
-					sm[y][x] = '.';
-				}
-			}
+			sm[y][x] = '.';
 		}
 	}
-
-	int score =
-	    std::accumulate(sm.begin(), sm.end(), 0, [&](auto sum, auto& v) {
-		    return sum + std::count(v.begin(), v.end(), '#');
-	    });
-	return score;
+	return sm;
 }
 
 int
 main()
 {
-	const StarMap& m  = mainMap;
-	const int      mw = m.front().size();
-	const int      mh = m.size();
+	StarMap& m = mainMap;
 
-	int maxScore = 0;
-	for (int sy = 0; sy < mh; ++sy)
+	auto max_info = std::make_tuple(-1, -1, 0);
+	for (auto [sx, sy] : enumerateAsteroids(m))
 	{
-		for (int sx = 0; sx < mw; ++sx)
-		{
-			if (m[sy][sx] == '#')
-			{
-				int score = calcScore(m, sx, sy);
-				maxScore  = std::max(score, maxScore);
-			}
-		}
+		auto info =
+		    std::make_tuple(sx, sy, countAsteroids(findZapped(m, sx, sy)));
+		max_info = std::max(info, max_info, [](auto& ta, auto& tb) {
+			return std::get<2>(ta) < std::get<2>(tb);
+		});
 	}
-	std::cout << maxScore << std::endl;
+	int max_x, max_y, max_score;
+	std::tie(max_x, max_y, max_score) = max_info;
+	std::cout << max_x << " " << max_y << " " << max_score << std::endl;
+
+	std::vector<std::pair<int, int>> zapOrder{};
+	while (countAsteroids(m) > 1)
+	{
+		auto zapped = enumerateAsteroids(findZapped(m, max_x, max_y));
+		std::sort(zapped.begin(), zapped.end(), [max_x, max_y](auto& a, auto& b) {
+			auto [ax, ay] = a;
+			auto [bx, by] = b;
+			return atan2(ax - max_x, ay - max_y) > atan2(bx - max_x, by - max_y);
+		});
+		std::copy(zapped.begin(), zapped.end(), std::back_inserter(zapOrder));
+		std::for_each(zapped.begin(), zapped.end(), [&m](auto& p) {
+			auto [px, py] = p;
+			m[py][px]     = '.';
+		});
+	}
+	auto [ans_x, ans_y] = zapOrder[199];
+	std::cout << '(' << ans_x << "," << ans_y << ")";
 }
