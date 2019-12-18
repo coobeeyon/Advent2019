@@ -1,7 +1,9 @@
+#include "range/v3/view/iota.hpp"
 #include <algorithm>
 #include <iostream>
 #include <iterator>
 #include <numeric>
+#include <range/v3/all.hpp>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -110,10 +112,9 @@ gcd(unsigned int u, unsigned int v)
 int
 countAsteroids(const StarMap& m)
 {
-	int numAsteroids =
-	    std::accumulate(m.begin(), m.end(), 0, [&](auto sum, auto& v) {
-		    return sum + std::count(v.begin(), v.end(), '#');
-	    });
+	int numAsteroids = ranges::accumulate(m, 0, [&](auto sum, auto& v) {
+		return sum + ranges::count(v, '#');
+	});
 	return numAsteroids;
 }
 
@@ -181,13 +182,14 @@ main()
 	while (countAsteroids(m) > 1)
 	{
 		auto zapped = enumerateAsteroids(findZapped(m, max_x, max_y));
-		std::sort(zapped.begin(), zapped.end(), [max_x, max_y](auto& a, auto& b) {
+		ranges::sort(zapped, [max_x, max_y](auto& a, auto& b) {
 			auto [ax, ay] = a;
 			auto [bx, by] = b;
-			return atan2(ax - max_x, ay - max_y) > atan2(bx - max_x, by - max_y);
+			return atan2(ax - max_x, ay - max_y) >
+			       atan2(bx - max_x, by - max_y);
 		});
-		std::copy(zapped.begin(), zapped.end(), std::back_inserter(zapOrder));
-		std::for_each(zapped.begin(), zapped.end(), [&m](auto& p) {
+		ranges::copy(zapped, ranges::back_inserter(zapOrder));
+		ranges::for_each(zapped, [&m](auto& p) {
 			auto [px, py] = p;
 			m[py][px]     = '.';
 		});
