@@ -1,16 +1,33 @@
+#include <algorithm>
 #include <iostream>
+#include <numeric>
 #include <string>
 #include <vector>
 
 namespace
 {
-std::vector<std::string> testMap = {".#..#", //
-                                    ".....", //
-                                    "#####", //
-                                    "....#", //
-                                    "...##"};
+using StarMap = std::vector<std::string>;
 
-std::vector<std::string> rawMap = {
+StarMap crossMap = {".#.", "###", ".#."};
+
+StarMap testMap = {".#..#", //
+                   ".....", //
+                   "#####", //
+                   "....#", //
+                   "...##"};
+
+StarMap testMap2 = {"......#.#.", //
+                    "#..#.#....", //
+                    "..#######.", //
+                    ".#.#.###..", //
+                    ".#..#.....", //
+                    "..#....#.#", //
+                    "#..#....#.", //
+                    ".##.#..###", //
+                    "##...#..#.", //
+                    ".#....####"};
+
+StarMap mainMap = {
     "#..#.#.#.######..#.#...##", //
     "##.#..#.#..##.#..######.#", //
     ".#.##.#..##..#.#.####.#..", //
@@ -39,95 +56,108 @@ std::vector<std::string> rawMap = {
 };
 } // namespace
 
-struct Coord
+unsigned int
+gcd(unsigned int u, unsigned int v)
 {
-	int x{};
-	int y{};
-};
+	unsigned int shift = 0;
 
-std::ostream&
-operator<<(std::ostream& stream, const Coord& coord)
-{
-	std::cout << "(" << coord.x << "," << coord.y << ")";
-	return stream;
-}
+	/* GCD(0,v) == v; GCD(u,0) == u, GCD(0,0) == 0 */
+	if (u == 0)
+		return v;
+	if (v == 0)
+		return u;
 
-using Asteroids = std::vector<Coord>;
-
-Asteroids
-getAsteroids(const std::vector<std::string>& rawMap)
-{
-	Coord     currentCoord{};
-	Asteroids asteroids;
-	for (const auto& row : rawMap)
+	/* Let shift := lg K, where K is the greatest power of 2
+	    dividing both u and v. */
+	while (((u | v) & 1) == 0)
 	{
-		currentCoord.x = 0;
-		for (const auto val : row)
+		shift++;
+		u >>= 1;
+		v >>= 1;
+	}
+
+	while ((u & 1) == 0)
+		u >>= 1;
+
+	/* From here on, u is always odd. */
+	do
+	{
+		/* remove all factors of 2 in v -- they are not common */
+		/*   note: v is not zero, so while will terminate */
+		while ((v & 1) == 0)
+			v >>= 1;
+
+		/* Now u and v are both odd. Swap if necessary so u <= v,
+		    then set v = v - u (which is even). For bignums, the
+		     swapping is just pointer movement, and the subtraction
+		      can be done in-place. */
+		if (u > v)
 		{
-			if (val == '#')
-			{
-				asteroids.push_back(currentCoord);
-			}
-			currentCoord.x++;
+			unsigned int t = v;
+			v              = u;
+			u              = t; // Swap u and v.
 		}
-		currentCoord.y++;
-	}
-	return asteroids;
-}
 
-bool
-isBlocker(Coord c0, Coord c1)
-{
-	if ((c0.x * c1.x < 0) || (c0.y * c1.y < 0) ||
-	    ((c1.x == 0) && (c1.y == 0)) || ((c0.x == c1.x) && (c0.y == c1.y)))
-	{
-		return false;
-	}
-	c0.x = abs(c0.x);
-	c0.y = abs(c0.y);
-	c1.x = abs(c1.x);
-	c1.y = abs(c1.y);
-	if (c0.x == c1.x)
-	{
-		std::swap(c0.x, c0.y);
-		std::swap(c1.x, c1.y);
-	}
-	if (c0.x > c1.x)
-	{
-		std::swap(c0, c1);
-	}
-	if ((c0.x != 0) && (c1.x % c0.x == 0) && ((c1.x / c0.x) * c0.y == c1.y))
-	{
-		return true;
-	}
-	return false;
+		v -= u; // Here v >= u.
+	} while (v != 0);
+
+	/* restore common factors of 2 */
+	return u << shift;
 }
 
 int
-scoreAsteroid(Coord candidate, Asteroids asteroids)
+calcScore(const StarMap& m, int sx, int sy)
 {
-	for (auto& asteroid : asteroids)
+	StarMap   sm = m;
+	const int mw = sm.front().size();
+	const int mh = sm.size();
+	sm[sy][sx]   = '.';
+	for (int ay = 0; ay < mh; ++ay)
 	{
-		asteroid.x -= candidate.x;
-		asteroid.y -= candidate.y;
-	}
-	for (const auto& a0 : asteroids)
-	{
-		for (const auto& a1 : asteroids)
+		for (int ax = 0; ax < mw; ++ax)
 		{
-			if (isBlocker(a0, a1))
+			if (sm[ay][ax] == '#')
 			{
-				std::cout << a0 << "," << a1 << std::endl;
+				int          dx = ax - sx;
+				int          dy = ay - sy;
+				unsigned int g  = gcd(abs(dx), abs(dy));
+				dy /= (int)g;
+				dx /= (int)g;
+				for (int y = ay + dy, x = ax + dx;
+				     (y >= 0) && (y < mh) && (x >= 0) && (x < mw);
+				     y += dy, x += dx)
+				{
+					sm[y][x] = '.';
+				}
 			}
 		}
 	}
-	return 0;
+
+	int score =
+	    std::accumulate(sm.begin(), sm.end(), 0, [&](auto sum, auto& v) {
+		    return sum + std::count(v.begin(), v.end(), '#');
+	    });
+	return score;
 }
 
 int
 main()
 {
-	auto asteroids = getAsteroids(testMap);
-	std::cout << "Asteroid 0 " << asteroids[0] << std::endl;
-	scoreAsteroid(asteroids[0], asteroids);
+	const StarMap& m  = mainMap;
+	const int      mw = m.front().size();
+	const int      mh = m.size();
+
+	int maxScore = 0;
+	for (int sy = 0; sy < mh; ++sy)
+	{
+		for (int sx = 0; sx < mw; ++sx)
+		{
+			if (m[sy][sx] == '#')
+			{
+				int score = calcScore(m, sx, sy);
+				maxScore  = std::max(score, maxScore);
+			}
+		}
+	}
+	std::cout << maxScore << std::endl;
 }
